@@ -1,0 +1,117 @@
+---
+permalink: /docs/
+---
+<!DOCTYPE html>
+<html lang= "{{ page.lang | default: site.lang | default: "en" }}">
+
+  {% include head.html %}
+
+  <!-- See here for how to use the TOC control:
+  https://afeld.github.io/bootstrap-toc/ -->
+  <body  data-spy= "scroll" data-target= "#toc">
+    {% include header.html %}
+    <div class= "container">
+      <div class= "row">
+        <!-- sidebar, which will move to the top on a small screen -->
+        <div class= "col-sm-4 sidenav">
+          <nav id= "toc" data-spy= "affix" data-toggle= "toc"></nav>
+        </div>
+        <!-- main content area -->
+        <div class= "col-sm-8">
+          <h2>Introduction</h2>
+          <p>Lindel is a Logistic regression model for accurate indel prediction induced by Cas9 cleavage. It takes 65 bp sequence (clevage site at 30) as an input and predicts the frequencies for all possible deletions <30 bp, all 1-2 bp insertions, and insertions larger than 2 bp as a group.</p>
+          <p>In this manual, we are going to introduce how Lindel works and how to use it </p>
+
+          <h2>Using Lindel</h2>
+          <h3>Webtool</h3>
+          <p>We developed a <a href="website here">webtool</a> to show the distribution of most frequent indels. This is just a visualization tool, for more functions and detailed information, please install the package locally to generate full list of indels and frameshift ratio predicted by our tool.</p>
+          <h3>Integrated in CRISPOR</h3>
+          <p>Lindel has been integrated into guide design tool <a href="http://crispor.tefor.net/">CRISPOR</a>. </p>
+          
+          <h3>Installing local Lindel from Github</h3>
+          <p> Lindel has been wrapped as a <code>python</code> package. It includes the functions to parse input sequence and models to predict the frequencies of all indels.</p>
+          <div class= "panel panel-info">
+            <div class= "panel-heading">
+              <h3 class= "panel-title" data-toc-skip>Requirements</h3>
+            </div>
+            <div class= "panel-body">
+              <p>Compatible with both <code>Python2.7</code> and <code>Python3.5</code> or higher.</p>
+              <p>Requires <code>biopython</code>,<code>numpy</code> and <code>scipy</code></p>
+            </div>
+          </div>
+          <p>In terminal, type:</p>
+          <figure class="highlight">
+            <pre><code class="language-bash" data-lang="bash">git clone https://github.com/shendurelab/Lindel.git 
+cd Lindel
+python setup.py install</code></pre>
+          </figure>
+          <p> We provide a simple test python code <code>Lindel_prediction.py</code> for you to test your target sequence. It uses 60-65 bp sequence (30 bp upstream and 30-35 bp downstream of the cleavage site) and a filename as input, and outputs the file listing all possible indels and the frameshift ratio.</p>
+          <figure class="highlight">
+            <pre><code class="language-bash" data-lang="bash">python Lindel_prediction.py TAACGTTATCAACGCCTATATTAAAGCGACCGTCGGTTGAACTGCGTGGATCAATGCGTC test_seq</code></pre>
+          </figure>
+          <p> The output file should look like the table below, showing the indels, frequencies and locations. The location is relative distance to the cleavage site, with negative values for upstream and non-negative values for downstream.</p>
+          <font size="2">
+          <table class = "table" style='font-family:"Courier New", Courier, monospace; font-size: 9'>
+          	<thead>
+          		<tr>
+                  <th>...AACGCCTATATTAAAGCGAC | CGTCGGTTGAACTGCGTGGA...</th>
+                  <th>Frequency</th>
+                  <th>Indel size</th>
+                  <th>Indel start site</th>
+                </tr>
+            </thead>
+            <tbody>
+          		<tr>
+                  <th>...AACGCCTATATTAAAGCG-- | --TCGGTTGAACTGCGTGGA...</th>
+                  <th>30.90</th>
+                  <th>D4</th>
+                  <th>-2</th>
+                </tr>
+           		<tr>
+                  <th>...AACGCCTATATTAAAGCGAC | -GTCGGTTGAACTGCGTGGA...</th>
+                  <th>16.37</th>
+                  <th>D1</th>
+                  <th>0</th>
+                </tr>
+              <tr>
+                  <th>...AACGCCTATATTAAAGCGAC X CGTCGGTTGAACTGCGTGGA...</th>
+                  <th>8.77</th>
+                  <th>I3+X</th>
+                  <th></th>
+                </tr>   
+              <tr>
+                  <th>...AACGCCTATATTAAAGCGAC C CGTCGGTTGAACTGCGTGGA...</th>
+                  <th>6.07</th>
+                  <th>I1+C</th>
+                  <th></th>
+                </tr>     
+              <tr>
+                  <th>...AACGCCTATATTAAAGCG-- | -----GTTGAACTGCGTGGA...</th>
+                  <th>3.96</th>
+                  <th>D7</th>
+                  <th>-2</th>
+                </tr>                              
+            </tbody>
+          </table>
+          </font>
+          <h2>Lindel Performance</h2>
+          <p> Two other tools (<a href="https://partslab.sanger.ac.uk/FORECasT#results/">ForeCasT</a> and <a href="https://indelphi.giffordlab.mit.edu/">inDelphi</a>) are also available to predict the relative frequencies of indels. Lindel compares favorably to the other tools. </p>
+          <div class="text-center">
+            <img src="{{site.baseurl}}/images/Performance.png">
+          </div>
+
+</div>
+</div>
+</div>
+
+<br>
+<br>
+<br>
+<br>
+
+{% include footer.html %}
+
+</body>
+
+</html>
+
