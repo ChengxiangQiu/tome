@@ -1,5 +1,5 @@
 ---
-description: "Documentation for Lindel"
+description: "Documentation for Tome"
 modified: 2019-04-20
 ---
 <!DOCTYPE html>
@@ -13,7 +13,7 @@ modified: 2019-04-20
 
   <div class="container fifty" style="max-width: 1000px">
     <div class="fixOverlayDiv">
-        <h1 align = "left">Lindel</h1>
+        <h1 align = "left">Tome</h1>
         <p> Lindel is a Logistic regression model for accurate indel prediction induced by Cas9 cleavage. It takes 65 bp sequence (clevage site at 30) as an input and predicts the frequencies for all possible deletions <30 bp, all 1-2 bp insertions, and insertions larger than 2 bp as a group. </p>
         <p>The scheme below showes the structure of Lindel modeling. It takes the sequence and extracting <b>Sequence features</b> (one-hot encoded 20bp target sequence) and <b>Microhomology features</b> (all possible 1-4 bp microhomology tracts from the input sequencee). The model will use these features to make three predictions: </p>
         <ul>
