@@ -51,7 +51,7 @@ const svg = d3.select('body').append('svg')
     .attr('viewBox', `${-width / 2} ${-height / 2} ${width} ${height}`)
     .on('click', () => focusOn()); // Reset zoom on canvas click
 
-    d3.json('mouse.json', (error, root) => {
+    d3.json('/images/mouse.json', (error, root) => {
     if (error) throw error;
 
     root = d3.hierarchy(root);
