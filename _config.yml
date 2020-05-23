@@ -13,11 +13,11 @@
 # you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
-title: Lindel
-email: wchen108@uw.edu
+title: Tome
+email: cxqiu@uw.edu
 description: > # this means to ignore newlines until "baseurl:"
-  Lindel, a Logistic regression model for indel prediction.
-baseurl: "/Lindel"
+  Tree Of Mammalian Embryogenesis.
+baseurl: "/Tome"
 url: "" #http://krishna.gs.washington.edu/content/members/ajh24/mouse_atlas_website" # the base hostname & protocol for your site, e.g. http://example.com
 
 # Build settings
