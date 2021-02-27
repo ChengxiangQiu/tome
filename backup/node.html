@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Cell state of TOME</title>
+    <style>
+        body{
+            font-family: Arial;
+            margin-left: 30px;
+            font: 15px sans-serif;
+        }
+        h1{
+            color: #0099FF;
+        }
+        h2{
+            color: #000000;
+        }
+        tr{
+            background-color: #e5e5e5;
+            border: solid 1px #CCC; padding: 0 1ex;
+        }
+        td{
+            background-color: #ffffff;
+            border: solid 1px #CCC; padding: 0 1ex;
+        }
+        table{
+            color: #000000;
+        }
+
+        path { 
+            stroke: steelblue;
+            stroke-width: 2;
+            fill: none;
+        }
+        .axis path,
+        .axis line {
+          fill: none;
+          stroke: #000;
+          shape-rendering: crispEdges;
+        }
+
+        .dot {
+          stroke: #000;
+        }
+
+        .tooltip {
+          position: absolute;
+          width: 200px;
+          height: 28px;
+          pointer-events: none;
+        }
+
+         .node circle {
+         fill: #000000;
+         stroke: #000000;
+         stroke-width: 8px;
+        }
+
+         .node text { font: 12px sans-serif; }
+
+         .link {
+           fill: none;
+           stroke: #000000;
+           stroke-width: 5px;
+         }
+
+        .legend rect {
+          fill:white;
+          stroke:black;
+          opacity:1;
+        }
+
+    </style>
+</head>
+<body>
+<h1>Cell state of TOME</h1>
+<h2>Some basic information of the selected cell state.</h2>
+<div id="table"></div>
+
+<div id="velocity_plot">
+<h2 style="margin-top:50px;">RNA velocity clarifies relationships between cell states. </h2>
+<svg id="svgEmbed_1" style="height:500px; width:500px;  margin-left: 20px;"></svg>
+<svg id="svgEmbed_2" style="height:500px; width:600px;  margin-left: 20px;"></svg>
+</div>
+
+<div id="view_plot">
+<h2 style="margin-top:50px;">Inferring continuous expression levels for top highly variable TFs (or cell-type-specific marker genes) over the possible cellular trajectory. </h2>
+<p style="margin-left: 20px;">Select one TF (gene):</p>
+<div id="my_selection" style="height:500px; width:50px;  margin-left: 20px; float: left;"></div>
+<div id="my_dataviz" style="height:500px; width:500px;  margin-left: 50px; float: left;"></div>
+</div>
+
+</body>
+
+<script type="text/javascript" src="d3.v3.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+<!-- load the function file you need before you call it... -->
+<script type="text/javascript" src="tabulate.js"></script>
+<script type="text/javascript" src="vcplot.js"></script>
+
+<script type="text/javascript">
+    function getQueryVariable(variable) {
+    var query = window.location.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
+        if (decodeURIComponent(pair[0]) == variable) {
+            return decodeURIComponent(pair[1]);
+        }
+    }
+    console.log('Query variable %s not found', variable);
+    }
+
+    // alert(getQueryVariable('node_id'));
+    node_id = getQueryVariable('node_id');
+
+    //Load in contents of CSV file, and do things to the data.
+    d3.tsv("node_information.tsv", function(error, myData) {
+        if (error) {
+            console.log("Had an error loading file.");
+        }
+        // We'll be using simpler data as values, not objects.
+        var myArray = [];
+        myData.forEach(function(d, i){
+            // Add a new array with the values of each:
+            myArray.push([d.key, d[node_id]]);
+        });
+        console.log(myData);
+        console.log(myArray);
+
+        // You could also have made the new array with a map function!
+        //using colors and fonts from the UNICEF Style Guide
+        var table = d3.select("#table").append("table")
+                        .attr("style", "font-size: 25px");
+        var header = table.append("thead").append("tr");
+            header
+                .selectAll("th")
+                .data(["Key", "Value"])
+                .enter()
+                .append("th")
+                .text(function(d) { return d; });
+        var tablebody = table.append("tbody");
+        rows = tablebody
+                .selectAll("tr")
+                .data(myArray)
+                .enter()
+                .append("tr");
+        // We built the rows using the nested array - now each row has its own array.
+        cells = rows.selectAll("td")
+            // each row has data associated; we get it and enter it for the cells.
+                .data(function(d) {
+                    console.log(d);
+                    return d;
+                })
+                .enter()
+                .append("td")
+                .html(function(d) {
+                    return d;
+                });
+    });
+
+    if(vcplot.has(node_id)){
+        d3.select("#svgEmbed_1").append("image")
+          .attr("xlink:href",vcplot.get(node_id))
+          .attr("width", '500px')
+          .attr("height", '500px')
+
+        d3.select("#svgEmbed_2").append("image")
+          .attr("xlink:href",vcplot_day.get(node_id))
+          .attr("width", '530px')
+          .attr("height", '530px')
+    } else {
+        d3.select('#velocity_plot').remove();
+    }
+
+
+    d3.tsv('best_path.tsv', function(error, path_data){
+        
+        var to_keep_str = path_data.filter(function(d) { 
+              return d['node_id'] == node_id
+        });
+
+        if(to_keep_str.length === 0){
+            d3.select('#view_plot').remove();
+        } else {
+            var to_keep = to_keep_str[0]['best_path'].split(",");
+            var gene_list = to_keep_str[0]['gene_use'].split(",");
+
+            d3.tsv('exp_state.tsv', function(error, org_data) {
+
+            // load data
+            var data = org_data.filter(function(d) { 
+                return to_keep.indexOf(d.state) >= 0
+            });
+
+            var margin = {top: 20, right: 200, bottom: 100, left: 100},
+                width = 800 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+//            var gene_list = d3.keys(data[0]);
+//                gene_list.shift();
+//                gene_list.shift();
+//                gene_list.shift();
+//                gene_list.shift();
+
+            var select = d3.select("#my_selection")
+                .append('select')
+                .attr('class','select')
+                .on('change',onchange)
+
+            var options = select
+                .selectAll('option')
+                .data(gene_list).enter()
+                .append('option')
+                .text(function (d) { return d; });
+
+            function onchange() {
+                $('#scatter_plot').remove();
+                var gene_id = d3.select('select').property('value');
+
+                // setup x 
+                var xValue = function(d) { return d.pseudotime;}, // data -> value
+                    xScale = d3.scale.linear().range([0, width]), // value -> display
+                    xMap = function(d) { return xScale(xValue(d));}, // data -> display
+                    xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+
+                // setup y
+                var yValue = function(d) { return d[gene_id];}, // data -> value
+                    yScale = d3.scale.linear().range([height, 0]), // value -> display
+                    yMap = function(d) { return yScale(yValue(d));}, // data -> display
+                    yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+            // setup fill color
+                var cValue = function(d) { return d.celltype;},
+                    color = d3.scale.category10();
+
+                    // append the svg object to the body of the page
+                var svg = d3.select("#my_dataviz").append("svg")
+                    .attr("id", 'scatter_plot')
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                // add the tooltip area to the webpage
+                var tooltip = d3.select("#my_dataviz").append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0);
+
+                  // change string (from CSV) into number format
+                  data.forEach(function(d) {
+                    d.pseudotime = +d.pseudotime;
+                    d[gene_id] = +d[gene_id];
+                  });
+
+                  // don't want dots overlapping axis, so add in buffer to data domain
+                  xScale.domain([d3.min(data, xValue)-1, d3.max(data, xValue)+1]);
+                  yScale.domain([d3.min(data, yValue)-1, d3.max(data, yValue)+1]);
+
+                  // x-axis
+                  svg.append("g")
+                      .attr("class", "x axis")
+                      .attr("transform", "translate(0," + height + ")")
+                      .call(xAxis)
+                    .append("text")
+                      .attr("class", "label")
+                      .attr("x", width)
+                      .attr("y", 40)
+                      .style("text-anchor", "end")
+                      .text("Pseudotime");
+
+                  // y-axis
+                  svg.append("g")
+                      .attr("class", "y axis")
+                      .call(yAxis)
+                    .append("text")
+                      .attr("class", "label")
+                      .attr("transform", "rotate(-90)")
+                      .attr("y", -55)
+                      .attr("dy", ".71em")
+                      .style("text-anchor", "end")
+                      .text("Log(normalized expression of " + gene_id +")");
+
+                  // draw dots
+                  svg.selectAll(".dot")
+                      .data(data)
+                    .enter().append("circle")
+                      .attr("class", "dot")
+                      .attr("r", 3.5)
+                      .attr("cx", xMap)
+                      .attr("cy", yMap)
+                      .style("fill", function(d) { return color(cValue(d));}) 
+                      .on("mouseover", function(d) {
+                          tooltip.transition()
+                               .duration(200)
+                               .style("opacity", .9);
+                          tooltip.html(d["state"])
+                               .style("left", (d3.event.pageX + 5) + "px")
+                               .style("top", (d3.event.pageY - 20) + "px");
+                      })
+                      .on("mouseout", function(d) {
+                          tooltip.transition()
+                               .duration(500)
+                               .style("opacity", 0);
+                      });
+/*
+                  var valueline = d3.svg.line()
+                      .interpolate("basis") 
+                      .x(function(d) { return xScale(d.pseudotime); })
+                      .y(function(d) { return yScale(d[gene_id]); });
+
+                  svg.append("path")
+                      .attr("class", "line")
+                      .attr("d", valueline(data));
+*/
+                  // draw legend
+                  var legend = svg.selectAll(".legend")
+                      .data(color.domain())
+                      .enter().append("g")
+                      .attr("class", "legend")
+                      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+                  // draw legend colored rectangles
+                  legend.append("rect")
+                      .attr("x", width + 20)
+                      .attr("width", 18)
+                      .attr("height", 18)
+                      .style("fill", color);
+
+                  // draw legend text
+                  legend.append("text")
+                      .attr("x", width + 40)
+                      .attr("y", 9)
+                      .attr("dy", ".35em")
+                      .style("text-anchor", "start")
+                      .text(function(d) { return d;})
+              };
+
+            });
+        }
+
+
+    });
+
+    
+
+
+ 
+
+</script>
+
+</html>

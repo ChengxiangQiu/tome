@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Edge of TOME</title>
+    <style>
+        body{
+            font-family: Arial;
+            margin-left: 30px;
+            font: 15px sans-serif;
+        }
+        h1{
+            color: #0099FF;
+        }
+        h2{
+            color: #000000;
+        }
+        p{
+            color: #000000;
+            font-size: 20px;
+        }
+        tr{
+            background-color: #e5e5e5;
+            border: solid 1px #CCC; padding: 0 1ex;
+        }
+        td{
+            background-color: #ffffff;
+            border: solid 1px #CCC; padding: 0 1ex;
+        }
+        table{
+            color: #000000;
+        }
+        .axis path,
+        .axis line {
+          fill: none;
+          stroke: #000;
+          shape-rendering: crispEdges;
+        }
+
+        .tooltip {
+          position: absolute;
+          width: 200px;
+          height: 28px;
+          pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<h1>Edge of TOME</h1>
+<h2>This table shows the basic information of an individual edge. </h2>
+<div id="table"></div>
+
+<div id = "view_plot">
+<h2 style="margin-top:50px;">Viewing the expression levels for key TF candidates (or cell-type-specific marker genes) of each branchpoint. </h2>
+<p style="margin-left: 20px;">Select one TF (gene):</p>
+<div id="my_selection" style="height:600px; width:50px;  margin-left: 20px; float: left;"></div>
+<div id="my_dataviz_1" style="height:500px; width:700px;  margin-left: 40px; float: left;"></div>
+<div id="my_dataviz_2" style="height:500px; width:700px;  margin-left: 10px; float: left;"></div>
+</div>
+</body>
+
+<script type="text/javascript" src="d3.v3.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+<!-- load the function file you need before you call it... -->
+<script type="text/javascript" src="tabulate.js"></script>
+
+<script type="text/javascript">
+    function getQueryVariable(variable) {
+    var query = window.location.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
+        if (decodeURIComponent(pair[0]) == variable) {
+            return decodeURIComponent(pair[1]);
+        }
+    }
+    console.log('Query variable %s not found', variable);
+    }
+
+   // alert(getQueryVariable('edge_id'));
+   edge_id = getQueryVariable('source_node_id') + '_' + getQueryVariable('target_node_id');
+
+    //Load in contents of CSV file, and do things to the data.
+    d3.tsv("edge_information.tsv", function(error, myData) {
+        if (error) {
+            console.log("Had an error loading file.");
+        }
+        // We'll be using simpler data as values, not objects.
+        var myArray = [];
+        myData.forEach(function(d, i){
+            // Add a new array with the values of each:
+            myArray.push([d.key, d[edge_id]]);
+        });
+        console.log(myData);
+        console.log(myArray);
+
+        // You could also have made the new array with a map function!
+        //using colors and fonts from the UNICEF Style Guide
+        var table = d3.select("#table").append("table")
+                    .attr("style", "font-size: 25px");
+        var header = table.append("thead").append("tr");
+            header
+                .selectAll("th")
+                .data(["Key", "Value"])
+                .enter()
+                .append("th")
+                .text(function(d) { return d; });
+        var tablebody = table.append("tbody");
+        rows = tablebody
+                .selectAll("tr")
+                .data(myArray)
+                .enter()
+                .append("tr");
+        // We built the rows using the nested array - now each row has its own array.
+        cells = rows.selectAll("td")
+            // each row has data associated; we get it and enter it for the cells.
+                .data(function(d) {
+                    console.log(d);
+                    return d;
+                })
+                .enter()
+                .append("td")
+                .html(function(d) {
+                    return d;
+                });
+    });
+
+    d3.tsv('https://chengxiangqiu.github.io/tome/exp/' + getQueryVariable('source_node_id') + '.tsv', function(error, data) {
+
+        if (error) {
+            $('#view_plot').remove();
+        }
+
+        var margin = {top: 20, right: 200, bottom: 100, left: 100},
+            width = 700 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+        // setup x 
+        var xValue = function(d) { return d.UMAP_1;}, // data -> value
+            xScale = d3.scale.linear().range([0, width]), // value -> display
+            xMap = function(d) { return xScale(xValue(d));}, // data -> display
+            xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+
+        // setup y
+        var yValue = function(d) { return d.UMAP_2;}, // data -> value
+            yScale = d3.scale.linear().range([height, 0]), // value -> display
+            yMap = function(d) { return yScale(yValue(d));}, // data -> display
+            yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+            // setup fill color
+            var cValue_1 = function(d) { return d.Anno;},
+                color_1 = d3.scale.category10();
+
+            // the first scatter plot used to show the cell type (state)
+            var svg_1 = d3.select("#my_dataviz_1").append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // add the tooltip area to the webpage
+            var tooltip_1 = d3.select("#my_dataviz_1").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            // change string (from CSV) into number format
+            data.forEach(function(d) {
+                d.UMAP_1 = +d.UMAP_1;
+                d.UMAP_2 = +d.UMAP_2;
+            });
+
+            // don't want dots overlapping axis, so add in buffer to data domain
+            xScale.domain([d3.min(data, xValue)-1, d3.max(data, xValue)+1]);
+            yScale.domain([d3.min(data, yValue)-1, d3.max(data, yValue)+1]);
+
+            // x-axis
+            svg_1.append("g")
+              .attr("class", "x axis")
+              .attr("transform", "translate(0," + height + ")")
+              .call(xAxis)
+            .append("text")
+              .attr("class", "label")
+              .attr("x", width)
+              .attr("y", 40)
+              .style("text-anchor", "end")
+              .text("UMAP_1");
+
+            // y-axis
+            svg_1.append("g")
+              .attr("class", "y axis")
+              .call(yAxis)
+            .append("text")
+              .attr("class", "label")
+              .attr("transform", "rotate(-90)")
+              .attr("y", -45)
+              .attr("dy", ".71em")
+              .style("text-anchor", "end")
+              .text("UMAP_2");
+
+            // draw dots
+            svg_1.selectAll(".dot")
+              .data(data)
+            .enter().append("circle")
+              .attr("class", "dot")
+              .attr("r", 2.5)
+              .attr("stroke", '#000')
+              .attr("cx", xMap)
+              .attr("cy", yMap)
+              .style("fill", function(d) { return color_1(cValue_1(d));}) 
+              .on("mouseover", function(d) {
+                  tooltip_1.transition()
+                       .duration(200)
+                       .style("opacity", .9);
+                  tooltip_1.html(d["Anno"])
+                       .style("left", (d3.event.pageX + 5) + "px")
+                       .style("top", (d3.event.pageY - 20) + "px");
+              })
+              .on("mouseout", function(d) {
+                  tooltip_1.transition()
+                       .duration(500)
+                       .style("opacity", 0);
+              });
+
+            // draw legend
+            var legend_1 = svg_1.selectAll(".legend")
+              .data(color_1.domain())
+              .enter().append("g")
+              .attr("class", "legend")
+              .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+            // draw legend colored rectangles
+            legend_1.append("rect")
+              .attr("x", width - 20)
+              .attr("width", 18)
+              .attr("height", 18)
+              .style("fill", color_1);
+
+            // draw legend text
+            legend_1.append("text")
+              .attr("x", width - 0)
+              .attr("y", 9)
+              .attr("dy", ".35em")
+              .style("text-anchor", "start")
+              .text(function(d) { return d;})
+
+            var gene_list = d3.keys(data[0]);
+                gene_list.shift();
+                gene_list.shift();
+                gene_list.shift();
+                gene_list.shift();
+                gene_list.shift();
+
+            var select = d3.select("#my_selection")
+                .append('select')
+                .attr('class','select')
+                .on('change',onchange)
+
+            var options = select
+                .selectAll('option')
+                .data(gene_list).enter()
+                .append('option')
+                .text(function (d) { return d; });
+
+        function onchange() {
+            $('#scatter_plot').remove();
+            var gene_id = d3.select('select').property('value');
+            
+            var domain_max =  d3.max(data, function(d) { return d[gene_id];});
+            var domain_min =  d3.min(data, function(d) { return d[gene_id];});
+
+            // setup fill color
+            var cValue_2 = function(d) { return d[gene_id];},
+                color_2 = d3.scale.linear().domain([domain_min, domain_max]).range(['beige', 'red']);
+
+                // append the svg object to the body of the page
+            var svg_2 = d3.select("#my_dataviz_2").append("svg")
+                .attr("id", 'scatter_plot')
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // add the tooltip area to the webpage
+            var tooltip_2 = d3.select("#my_dataviz_2").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            // don't want dots overlapping axis, so add in buffer to data domain
+            xScale.domain([d3.min(data, xValue)-1, d3.max(data, xValue)+1]);
+            yScale.domain([d3.min(data, yValue)-1, d3.max(data, yValue)+1]);
+
+            // x-axis
+            svg_2.append("g")
+              .attr("class", "x axis")
+              .attr("transform", "translate(0," + height + ")")
+              .call(xAxis)
+            .append("text")
+              .attr("class", "label")
+              .attr("x", width)
+              .attr("y", 40)
+              .style("text-anchor", "end")
+              .text("UMAP_1");
+
+            // y-axis
+            svg_2.append("g")
+              .attr("class", "y axis")
+              .call(yAxis)
+            .append("text")
+              .attr("class", "label")
+              .attr("transform", "rotate(-90)")
+              .attr("y", -45)
+              .attr("dy", ".71em")
+              .style("text-anchor", "end")
+              .text("UMAP_2");
+
+            // draw dots
+            svg_2.selectAll(".dot")
+              .data(data)
+            .enter().append("circle")
+              .attr("class", "dot")
+              .attr("r", 2.5)
+              .attr("cx", xMap)
+              .attr("cy", yMap)
+              .style("fill", function(d) { return color_2(cValue_2(d));}) 
+              .on("mouseover", function(d) {
+                  tooltip_2.transition()
+                       .duration(200)
+                       .style("opacity", .9);
+                  tooltip_2.html(d["Anno"] + "<br/> (" + d[gene_id] + ")")
+                       .style("left", (d3.event.pageX + 5) + "px")
+                       .style("top", (d3.event.pageY - 20) + "px");
+              })
+              .on("mouseout", function(d) {
+                  tooltip_2.transition()
+                       .duration(500)
+                       .style("opacity", 0);
+              });
+
+            svg_2.append("text")
+                .attr("x", (width / 2))             
+                .attr("y", 10 - (margin.top / 2))
+                .attr("text-anchor", "middle")  
+                .style("font-size", "16px") 
+                .text("Log(normalized expression of " + gene_id +")");
+
+            // add the legend now
+            var legendFullHeight = 120;
+            var legendFullWidth = 15;
+
+            var legendMargin = { top: 10, bottom: 10, left: 5, right: 0 };
+
+            // use same margins as main plot
+            var legendWidth = legendFullWidth - legendMargin.left - legendMargin.right;
+            var legendHeight = legendFullHeight - legendMargin.top - legendMargin.bottom;
+
+            var legendSvg = svg_2.append("g")
+                .attr("class", "legend")
+                .attr('width', legendFullWidth)
+                .attr('height', legendFullHeight)
+                .attr('transform', 'translate(' + legendMargin.left + ',' +
+                legendMargin.top + ')');
+
+            updateColourScale(['beige', 'red']);
+
+            function updateColourScale(scale) {
+                // create colour scale
+                var colorScale = d3.scale.linear()
+                    .domain(linspace(domain_min, domain_max, scale.length))
+                    .range(scale);
+
+                // clear current legend
+                legendSvg.selectAll('*').remove();
+
+                // append gradient bar
+                var gradient = legendSvg.append('defs')
+                    .append('linearGradient')
+                    .attr('id', 'gradient')
+                    .attr('x1', '0%') // bottom
+                    .attr('y1', '100%')
+                    .attr('x2', '0%') // to top
+                    .attr('y2', '0%')
+                    .attr('spreadMethod', 'pad');
+
+                // programatically generate the gradient for the legend
+                // this creates an array of [pct, colour] pairs as stop
+                // values for legend
+                var pct = linspace(0, 100, scale.length).map(function(d) {
+                    return Math.round(d) + '%';
+                });
+
+                var colourPct = d3.zip(pct, scale);
+
+                colourPct.forEach(function(d) {
+                    gradient.append('stop')
+                        .attr('offset', d[0])
+                        .attr('stop-color', d[1])
+                        .attr('stop-opacity', 1);
+                });
+
+                legendSvg.append('rect')
+                    .attr('x1', 0)
+                    .attr('y1', 0)
+                    .attr('width', legendWidth)
+                    .attr('height', legendHeight)
+                    .style('fill', 'url(#gradient)');
+
+                // create a scale and axis for the legend
+                var legendScale = d3.scale.linear()
+                    .domain([domain_min, domain_max])
+                    .range([legendHeight, 0]);
+
+                var legendAxis = d3.svg.axis()
+                    .scale(legendScale)
+                    .orient("right")
+                    .tickValues(d3.range(domain_min, domain_max))
+                    .tickFormat(d3.format("d"));
+
+                legendSvg.append("g")
+                    .attr("class", "legend axis")
+                    .attr("transform", "translate(" + legendWidth + ", 0)")
+                    .call(legendAxis);
+            }
+
+            function linspace(start, end, n) {
+                var out = [];
+                var delta = (end - start) / (n - 1);
+
+                var i = 0;
+                while(i < (n - 1)) {
+                    out.push(start + (i * delta));
+                    i++;
+                }
+
+                out.push(end);
+                return out;
+            }
+
+        };
+
+    });
+
+
+</script>
+
+</html>
