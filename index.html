@@ -282,7 +282,10 @@ treeJSON = d3.json("mouse.json", function(error, treeData) {
       .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
       .attr("data-legendGermlayer",function(d) { return d.node_group}) // real legend - germ layers
       .attr("data-legendCelltype",function(d) { return d.fx})        // fake legend - the list of cell type name on the right side
-      .on("click", clickNode)       // utilize the D3 function to update information in the bootstrap dialog
+      .on("click", function(d){
+        var node_id = d.node_id;
+        clickNode(node_id);
+      })       // utilize the D3 function to update information in the bootstrap dialog
       .attr("data-toggle", "modal") // display the bootstrap dialog
       .attr("data-target", "#NodeModal").style("cursor", "pointer") // display the bootstrap dialog
       .on("mouseover", function(d) {
@@ -323,10 +326,10 @@ treeJSON = d3.json("mouse.json", function(error, treeData) {
               .style("font-size", "1px")
               .style("fill-opacity", 0)
         });
-    ;
 
     nodeEnter.append("circle")
      .attr("r", 6)
+     .style("z-index", function(d) {return d.zindex})
      .style("fill", function(d){return myMap.get(d.node_group)})
      .style("stroke", function(d){return myMap.get(d.node_group)});
 
@@ -394,10 +397,7 @@ treeJSON = d3.json("mouse.json", function(error, treeData) {
     // done
 
 // To click a node
-    function clickNode(d) {
-
-
-var node_id = d.node_id;
+    function clickNode(node_id) {
 
 // remove the original table/plots
 d3.select("#NodeTable")
@@ -441,10 +441,16 @@ d3.tsv("NodeTable.tsv", function(error, NodeData) {
       .data(function(d) {return d;})
       .enter()
       .append("td")
-      .html(function(d) {return d;});
+      .html(function(d) {return d;})
+      .selectAll(".fake-link")
+      .on("click", function(){
+        var touch_id = d3.select(this).attr('id');
+        clickNode(touch_id);
+      });
 
 });
 // done
+
 
 // update the NodeVelocityPlot
 if(vcplot.has(node_id)){
@@ -686,7 +692,15 @@ d3.tsv("EdgeTable.tsv", function(error, EdgeDataOrg) {
       .data(function(d) {return d;})
       .enter()
       .append("td")
-      .html(function(d) {return d;});
+      .html(function(d) {return d;})
+      .selectAll(".fake-link")
+      .attr("data-toggle", "modal") // display the bootstrap dialog
+      .attr("data-target", "#NodeModal").style("cursor", "pointer") // display the bootstrap dialog
+      .on("click", function(){
+        var touch_id = d3.select(this).attr('id');
+        clickNode(touch_id);
+        $("#EdgeModal").modal('toggle');
+      });
 
 });
 
