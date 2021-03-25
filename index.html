@@ -757,7 +757,7 @@ d3.tsv("EdgeTable.tsv", function(error, EdgeDataOrg) {
 
 // make the two UMAP plots
 
-    d3.tsv('https://chengxiangqiu.github.io/tome/exp/' + target_node_id + '_' + source_node_id + '.tsv', function(error, EdgeExpDataOrg) {
+    d3.tsv('https://tome.gs.washington.edu/exp/' + target_node_id + '_' + source_node_id + '.tsv', function(error, EdgeExpDataOrg) {
 
         if (error) {
           d3.select('#EdgeScatterPlot')
