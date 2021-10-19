@@ -26,12 +26,12 @@ d3.legendGermlayer = function(g) {
     items = d3.entries(items).sort(function(a,b) { return a.value.pos-b.value.pos})
 
     let myMap_1 = new Map()
-      myMap_1.set("neuroectoderm", "ExE embryo")
-      myMap_1.set("surface_ectoderm", "Other")
-      myMap_1.set("endoderm", "Endoderm")
-      myMap_1.set("mesoderm", "Mesoderm")
-      myMap_1.set("exe_germ", "Neuroectoderm")
-      myMap_1.set("other", "Surface ectoderm")
+      myMap_1.set("neuroectoderm", "Mouse: ExE embryo")
+      myMap_1.set("surface_ectoderm", "Mouse: Other")
+      myMap_1.set("endoderm", "Mouse: Endoderm")
+      myMap_1.set("mesoderm", "Mouse: Mesoderm")
+      myMap_1.set("exe_germ", "Mouse: Neuroectoderm")
+      myMap_1.set("other", "Mouse: Surface ectoderm")
 
     let myMap_2 = new Map()
       myMap_2.set("neuroectoderm", "#E67E22")
